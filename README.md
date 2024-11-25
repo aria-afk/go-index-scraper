@@ -1,8 +1,8 @@
 # go-index-scraper
 
-A tool to build an updated list of the go-index.
+A tool to scrape data from the go-index
 
 # Notes
 
-- Can we make a dependency map somehow for each project
-- Can we scrape or parse some information on the package? (this would have to be done via the package url)
+- Can use github/gitlab api to gather readme/about of each package for other hosts can write a parser
+- CLI can generate a dependency map for a package

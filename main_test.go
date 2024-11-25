@@ -1,6 +1,7 @@
 package goscraper
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 )
@@ -33,5 +34,17 @@ func TestUrlProcessing(t *testing.T) {
 	urls, _ := GenerateUrls(startTime, endTime)
 
 	var wg sync.WaitGroup
-	ProcessUrls(urls, 10, true, &wg)
+	gi := ProcessUrls(urls, 10, true, &wg)
+
+	// TODO: Better testing eventually but this shows that we are propogating packages and versions
+	i := 0
+	for path, pkgInfo := range gi.Packages {
+		if i < 5 {
+			i++
+		} else {
+			break
+		}
+		fmt.Println(path)
+		fmt.Println(pkgInfo.Versions)
+	}
 }
