@@ -16,16 +16,22 @@ import (
 	"time"
 )
 
+// Holder container for all packages
+type GoIndex struct {
+	Packages map[string]*GoPackage // map[pathUrl]*GoPackage
+	sync.Mutex
+}
+
+// A struct that contains a packages versions and dependencies (only direct)
+type GoPackage struct {
+	Versions     []GoPackageVersion
+	Dependencies []string
+}
+
 // A snapshot of a packages version and its version timestamp (RFC3339Nano)
 type GoPackageVersion struct {
 	Version   string
 	Timestamp string
-}
-
-// Container struct for a single go package from the index
-type GoPackage struct {
-	Path     string
-	Versions []GoPackageVersion
 }
 
 // Raw struct to store JSON data per entry of the index.golang.org API
@@ -33,6 +39,33 @@ type GoIndexEntry struct {
 	Path      string `json:"Path"`
 	Version   string `json:"Version"`
 	Timestamp string `json:"Timestamp"`
+}
+
+// Appends data to the go package map with routine management
+func (gi *GoIndex) write(wg *sync.WaitGroup, pathUrl string, version string, timestamp string) {
+	gi.Lock()
+	gpv := GoPackageVersion{
+		Version:   version,
+		Timestamp: timestamp,
+	}
+	_, exists := gi.Packages[pathUrl]
+	if !exists {
+		gi.Packages[pathUrl] = &GoPackage{
+			Versions:     []GoPackageVersion{gpv},
+			Dependencies: make([]string, 0),
+		}
+	} else {
+		gi.Packages[pathUrl].Versions = append(gi.Packages[pathUrl].Versions, gpv)
+	}
+	gi.Unlock()
+	wg.Done()
+}
+
+// Constructor to make a new GoIndex wrapper
+func NewGoIndex() *GoIndex {
+	return &GoIndex{
+		Packages: make(map[string]*GoPackage, 0),
+	}
 }
 
 // GenerateUrls returns a list of all URLS from index.golang.org to be scraped
@@ -77,12 +110,12 @@ func GenerateUrls(startTime string, endTime string) ([]string, error) {
 // You can provide the size of semaphore (maxWorkers). For average machines recommended is 10-20
 //
 // Optional logging flag as well.
-func ProcessUrls(urls []string, maxWorkers int, logProgress bool, wg *sync.WaitGroup) {
+func ProcessUrls(urls []string, maxWorkers int, logProgress bool, wg *sync.WaitGroup) *GoIndex {
 	sem := make(chan int, maxWorkers)
 	urlCount := len(urls)
 	indexEntries := make(chan *GoIndexEntry, (urlCount * 2000))
 
-	allPackages := make(map[string]*GoPackage, 0)
+	gi := NewGoIndex()
 
 	for i, url := range urls {
 		if logProgress {
@@ -128,8 +161,13 @@ func ProcessUrls(urls []string, maxWorkers int, logProgress bool, wg *sync.WaitG
 		sem <- 1
 		wg.Add(1)
 		go func() {
-			defer wg.Done()
-			// TODO: Store/sort entries
+			gi.write(wg, e.Path, e.Version, e.Timestamp)
+			<-sem
 		}()
 	}
+
+	wg.Wait()
+	close(sem)
+
+	return gi
 }

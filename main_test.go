@@ -1,6 +1,7 @@
 package goscraper
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -24,4 +25,13 @@ func TestGenerateUrlsProvided(t *testing.T) {
 	if len(urls) < 100 || err != nil {
 		t.Fatalf("Expected a list of urls > 100, only recieved %v, error = %v", len(urls), err)
 	}
+}
+
+func TestUrlProcessing(t *testing.T) {
+	startTime := "2022-04-10T19:08:52.997264Z"
+	endTime := "2023-04-10T19:08:52.997264Z"
+	urls, _ := GenerateUrls(startTime, endTime)
+
+	var wg sync.WaitGroup
+	ProcessUrls(urls, 10, true, &wg)
 }
