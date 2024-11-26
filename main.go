@@ -68,6 +68,21 @@ func NewGoIndex() *GoIndex {
 	}
 }
 
+// "Main" Function to generate a fully scrapped GoIndex with the provided arguments
+//
+// startTime and endTime must be RFC3339Nano format. Pass empty strings to default to max.
+//
+// maxWorkers is that size of sempahore used to concurrently process data.
+func Scrape(startTime string, endTime string, maxWorkers int, logProgress bool) (*GoIndex, error) {
+	var wg sync.WaitGroup
+	urls, err := GenerateUrls(startTime, endTime)
+	if err != nil {
+		return &GoIndex{}, err
+	}
+	gi := ProcessUrls(urls, maxWorkers, logProgress, &wg)
+	return gi, nil
+}
+
 // GenerateUrls returns a list of all URLS from index.golang.org to be scraped
 // since a startTime and up to an endTime (both RFC3339Nano format)
 //

@@ -30,7 +30,7 @@ func TestGenerateUrlsProvided(t *testing.T) {
 
 func TestUrlProcessing(t *testing.T) {
 	startTime := "2022-04-10T19:08:52.997264Z"
-	endTime := "2023-04-10T19:08:52.997264Z"
+	endTime := "2022-06-10T19:08:52.997264Z"
 	urls, _ := GenerateUrls(startTime, endTime)
 
 	var wg sync.WaitGroup
@@ -47,4 +47,11 @@ func TestUrlProcessing(t *testing.T) {
 		fmt.Println(path)
 		fmt.Println(pkgInfo.Versions)
 	}
+}
+
+func TestScrape(t *testing.T) {
+	startTime := "2022-04-10T19:08:52.997264Z"
+	endTime := "2022-06-10T19:08:52.997264Z"
+	gi, err := Scrape(startTime, endTime, 10, true)
+	fmt.Println(gi, err)
 }
